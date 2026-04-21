@@ -1,0 +1,17 @@
+{
+  "name": "holdfast",
+  "private": true,
+  "description": "Holdfast monorepo — behavioural confirmation engine for deliberate UI interactions.",
+  "scripts": {
+    "build":       "pnpm -r build",
+    "dev":         "pnpm -r dev",
+    "test":        "pnpm -r test",
+    "clean":       "pnpm -r exec -- rm -rf dist",
+    "changeset":   "changeset",
+    "version":     "changeset version",
+    "release":     "pnpm build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0"
+  }
+}

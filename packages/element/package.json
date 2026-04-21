@@ -1,0 +1,29 @@
+{
+  "name": "@holdfast/element",
+  "version": "0.1.0",
+  "description": "Web Component for HoldfastGate — framework-agnostic <holdfast-gate> custom element.",
+  "keywords": ["holdfast", "web-component", "custom-element", "confirmation", "gate"],
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "rollup -c",
+    "dev":   "rollup -c --watch"
+  },
+  "dependencies": {
+    "@holdfast/core": "workspace:*"
+  },
+  "devDependencies": {
+    "rollup": "^4.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0"
+  },
+  "sideEffects": ["./src/HoldfastElement.js"]
+}

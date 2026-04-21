@@ -1,0 +1,41 @@
+{
+  "name": "@holdfast/core",
+  "version": "0.1.0",
+  "description": "Behavioural confirmation engine. Gates privileged actions behind sustained, steady intent.",
+  "keywords": [
+    "confirmation",
+    "gate",
+    "holdfast",
+    "intent",
+    "deliberate",
+    "ux",
+    "interaction",
+    "accessibility",
+    "composure"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev":   "rollup -c --watch",
+    "test":  "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "devDependencies": {
+    "rollup": "^4.0.0"
+  },
+  "sideEffects": false
+}

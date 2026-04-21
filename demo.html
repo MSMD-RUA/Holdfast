@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="color-scheme" content="dark"/>
+  <title>Holdfast — Engine Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #05070c;
+      color: rgba(210,225,255,.85);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    canvas {
+      display: block;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    #hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── State badge — top centre */
+    #state {
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      letter-spacing: .14em;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid currentColor;
+      transition: color .25s, border-color .25s, background .25s;
+      white-space: nowrap;
+    }
+
+    /* ── Package wordmark — top left */
+    #wordmark {
+      position: absolute;
+      top: 22px;
+      left: 20px;
+      font-size: 12px;
+      letter-spacing: .06em;
+      opacity: .35;
+    }
+    #wordmark span { opacity: .55; }
+
+    /* ── Metrics — top right */
+    #metrics {
+      position: absolute;
+      top: 16px;
+      right: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+    }
+    .metric {
+      font-size: 10px;
+      letter-spacing: .05em;
+      color: rgba(180,195,230,.45);
+      white-space: nowrap;
+    }
+    .metric b {
+      color: rgba(210,225,255,.75);
+      font-weight: 400;
+    }
+
+    /* ── Streak badge — top centre, below state */
+    #streak {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: .12em;
+      padding: 3px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,202,58,.0);
+      color: rgba(255,202,58,.0);
+      background: rgba(255,202,58,.0);
+      transition: color .4s, border-color .4s, background .4s, opacity .4s;
+      white-space: nowrap;
+      opacity: 0;
+    }
+    #streak.active {
+      color: rgba(255,202,58,.90);
+      border-color: rgba(255,202,58,.40);
+      background: rgba(255,202,58,.07);
+      opacity: 1;
+    }
+    #streak.trusted {
+      color: rgba(255,230,120,.95);
+      border-color: rgba(255,202,58,.70);
+      background: rgba(255,202,58,.13);
+      opacity: 1;
+    }
+
+    /* ── Event log — bottom right */
+    #log {
+      position: absolute;
+      bottom: 70px;
+      right: 18px;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 3px;
+      max-width: 240px;
+    }
+    .log-entry {
+      font-size: 10px;
+      letter-spacing: .04em;
+      opacity: 0;
+      animation: fadeLog .25s forwards;
+      white-space: nowrap;
+      text-align: right;
+    }
+    @keyframes fadeLog {
+      from { opacity: 0; transform: translateX(6px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ── Hint — bottom centre, above keys */
+    #hint {
+      position: absolute;
+      bottom: 46px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      letter-spacing: .06em;
+      color: rgba(180,195,230,.45);
+      white-space: nowrap;
+      transition: color .3s;
+      text-align: center;
+    }
+
+    /* ── Keyboard shortcuts — bottom centre */
+    #keys {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 18px;
+      font-size: 10px;
+      color: rgba(180,195,230,.22);
+      letter-spacing: .04em;
+    }
+
+    /* ── Severity switcher — bottom left */
+    #severity {
+      position: absolute;
+      bottom: 16px;
+      left: 18px;
+      display: flex;
+      gap: 6px;
+      pointer-events: auto;
+    }
+    .sev-btn {
+      font: 10px/1 ui-monospace, monospace;
+      letter-spacing: .06em;
+      padding: 4px 10px;
+      border-radius: 3px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.04);
+      color: rgba(210,225,255,.45);
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .sev-btn:hover { border-color: rgba(255,255,255,.30); color: rgba(210,225,255,.80); }
+    .sev-btn.active {
+      border-color: currentColor;
+      background: rgba(255,255,255,.08);
+      color: rgba(210,225,255,.90);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="hud">
+    <div id="wordmark">@holdfast<span>/core</span></div>
+
+    <div id="state">IDLE</div>
+    <div id="streak"></div>
+
+    <div id="metrics">
+      <div class="metric">commit  <b id="m-commit">1600ms</b></div>
+      <div class="metric">sync    <b id="m-sync">800ms</b></div>
+      <div class="metric">tension <b id="m-tension">0.00</b></div>
+      <div class="metric">escal.  <b id="m-escal">0</b></div>
+      <div class="metric">window  <b id="m-window">—</b></div>
+    </div>
+
+    <div id="log"></div>
+
+    <div id="hint">hold anywhere to begin</div>
+    <div id="keys">
+      <span>SPACE — hold</span>
+      <span>R — reset</span>
+    </div>
+
+    <div id="severity">
+      <button class="sev-btn" data-sev="caution">caution</button>
+      <button class="sev-btn active" data-sev="danger">danger</button>
+      <button class="sev-btn" data-sev="critical">critical</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { HoldfastGate, State, Event } from './packages/core/src/index.js';
+
+    // ── Canvas setup
+    const canvas = document.getElementById('c');
+    const ctx    = canvas.getContext('2d');
+    const DPR    = Math.min(2, devicePixelRatio || 1);
+    const TAU    = Math.PI * 2;
+
+    let W, H, CX, CY;
+
+    function resize() {
+      canvas.width  = Math.floor(innerWidth  * DPR);
+      canvas.height = Math.floor(innerHeight * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      W = innerWidth; H = innerHeight; CX = W / 2; CY = H / 2;
+    }
+    addEventListener('resize', resize);
+    resize();
+
+    // ── Severity presets
+    const PRESETS = {
+      caution : { syncMs: 600,  commitMs: 1200, lockMs:  4000, hardLockMs: 12000, windowMs: 12000 },
+      danger  : { syncMs: 800,  commitMs: 2200, lockMs:  8000, hardLockMs: 20000, windowMs: 15000 },
+      critical: { syncMs: 800,  commitMs: 3500, lockMs: 20000, hardLockMs: 40000, windowMs: 15000, commitGrowMs: 1200 },
+    };
+
+    // ── Streak tracking
+    let streakCount  = 0;  // consecutive grants without breach
+    const STREAK_MIN = 3;  // runs needed to unlock streak mode
+
+    const streakEl = document.getElementById('streak');
+    function updateStreakBadge() {
+      if (streakCount === 0) {
+        streakEl.textContent = '';
+        streakEl.className   = '';
+      } else if (streakCount < STREAK_MIN) {
+        streakEl.textContent = `streak ${streakCount}`;
+        streakEl.className   = 'active';
+      } else {
+        streakEl.textContent = `trusted ×${streakCount}`;
+        streakEl.className   = 'trusted';
+      }
+    }
+
+    // ── Gate
+    let severity = 'danger';
+    let gate;
+
+    function buildGate() {
+      gate?.removeAllListeners();
+      gate = new HoldfastGate({ ...PRESETS[severity], storageKey: `hf_demo_${severity}` });
+
+      gate.on('sync',    s => {
+        logEvent('sync', '#50B4FF', `primed — ${s.commitMs}ms to commit`);
+        spawnRipple('#50B4FF');
+      });
+      gate.on('grant',   s => {
+        streakCount++;
+        updateStreakBadge();
+        logEvent('grant', '#FFCA3A', streakCount >= STREAK_MIN ? `live  ★ trusted ×${streakCount}` : 'live');
+        flashAlpha  = 1.0;
+        spawnBurst(80, '#FFCA3A');
+        if (streakCount === STREAK_MIN) spawnBurst(40, '#FFE066');
+      });
+      gate.on('breach',  s => {
+        if (streakCount > 0) logEvent('breach', '#F07828', `streak broken (was ×${streakCount})`);
+        else logEvent('breach', '#F07828', `locked ${Math.ceil(s.lockRemaining/1000)}s`);
+        streakCount = 0;
+        updateStreakBadge();
+        spawnBurst(24, '#F07828');
+        spawnRipple('#F07828');
+      });
+      gate.on('expired', s => logEvent('expired', '#8090B0', 'window ended'));
+      gate.on('locked',  s => logEvent('locked',  '#F07828', `cooldown ${Math.ceil(s.lockRemaining/1000)}s`));
+    }
+
+    buildGate();
+
+    // Severity switcher
+    document.querySelectorAll('.sev-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelector('.sev-btn.active')?.classList.remove('active');
+        btn.classList.add('active');
+        severity = btn.dataset.sev;
+        buildGate();
+        hardReset();
+        logEvent('config', '#8090B0', `severity → ${severity}`);
+      });
+    });
+
+    // ── Hold state
+    let isHolding   = false;
+    let holdStartMs = 0;
+
+    // ── Visual state
+    let flashAlpha  = 0;
+    let lockPulse   = 0;
+
+    // ──────────────────────────────────────────────────────
+    // Particle systems
+    // ──────────────────────────────────────────────────────
+
+    // 1. Ambient floaters — always present
+    const floaters = [];
+    (function seedFloaters() {
+      for (let i = 0; i < 80; i++) {
+        floaters.push({
+          x  : Math.random() * 1600,
+          y  : Math.random() * 900,
+          vx : (Math.random() - 0.5) * 0.12,
+          vy : (Math.random() - 0.5) * 0.08,
+          r  : 0.5 + Math.random() * 1.2,
+          a  : 0.03 + Math.random() * 0.08,
+          phase: Math.random() * TAU,
+        });
+      }
+    })();
+
+    function tickFloaters(dt) {
+      for (const p of floaters) {
+        p.x += p.vx * dt * 60;
+        p.y += p.vy * dt * 60;
+        if (p.x < -10) p.x = W + 10;
+        if (p.x > W + 10) p.x = -10;
+        if (p.y < -10) p.y = H + 10;
+        if (p.y > H + 10) p.y = -10;
+      }
+    }
+
+    function drawFloaters(sec, snap) {
+      const trusted = streakCount >= STREAK_MIN;
+      for (const p of floaters) {
+        const twinkle = 0.5 + 0.5 * Math.sin(sec * 1.1 + p.phase);
+        let alpha = p.a * twinkle;
+        // Near centre brighten slightly when live
+        const dx = p.x - CX, dy = p.y - CY;
+        const d  = Math.sqrt(dx*dx + dy*dy);
+        if (snap.live) alpha += Math.max(0, 0.06 * (1 - d / (Math.min(W,H) * 0.6)));
+        if (trusted)   alpha += 0.02;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, TAU);
+        if (trusted && snap.live) {
+          ctx.fillStyle = `rgba(255,230,130,${alpha})`;
+        } else {
+          ctx.fillStyle = `rgba(190,210,255,${alpha})`;
+        }
+        ctx.fill();
+      }
+    }
+
+    // 2. Vortex charge particles — spawn while holding
+    const vortex = [];
+
+    function spawnVortexParticle(chargeP) {
+      const angle  = Math.random() * TAU;
+      const radius = Math.min(W,H) * (0.28 + Math.random() * 0.22);
+      vortex.push({
+        x    : CX + Math.cos(angle) * radius,
+        y    : CY + Math.sin(angle) * radius,
+        tx   : CX,
+        ty   : CY,
+        life : 1.0,
+        speed: 0.012 + chargeP * 0.018 + Math.random() * 0.010,
+        r    : 0.8 + Math.random() * 1.6,
+        hue  : chargeP > 0.5 ? 'commit' : 'sync',
+        spin : (Math.random() > 0.5 ? 1 : -1) * 0.04,
+        orbitR: radius,
+        orbitA: angle,
+      });
+    }
+
+    function tickVortex(dt) {
+      for (let i = vortex.length - 1; i >= 0; i--) {
+        const p = vortex[i];
+        // Spiral inward
+        p.orbitA += p.spin * dt * 60;
+        p.orbitR  = Math.max(0, p.orbitR - p.speed * dt * 60 * p.orbitR);
+        p.x = CX + Math.cos(p.orbitA) * p.orbitR;
+        p.y = CY + Math.sin(p.orbitA) * p.orbitR;
+        p.life -= 0.008 * dt * 60;
+        if (p.life <= 0 || p.orbitR < 6) vortex.splice(i, 1);
+      }
+    }
+
+    function drawVortex(snap) {
+      for (const p of vortex) {
+        const col = p.hue === 'commit' ? [255,202,58] : [60,165,255];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * p.life, 0, TAU);
+        ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${p.life * 0.7})`;
+        ctx.fill();
+      }
+    }
+
+    // 3. Burst particles — GRANT / BREACH / SYNC events
+    const burst = [];
+
+    function spawnBurst(count, hexColor) {
+      const r = parseInt(hexColor.slice(1,3),16);
+      const g = parseInt(hexColor.slice(3,5),16);
+      const b = parseInt(hexColor.slice(5,7),16);
+      for (let i = 0; i < count; i++) {
+        const angle = (i / count) * TAU + Math.random() * 0.3;
+        const speed = 1.2 + Math.random() * 3.5;
+        burst.push({
+          x   : CX, y: CY,
+          vx  : Math.cos(angle) * speed,
+          vy  : Math.sin(angle) * speed,
+          life: 1.0,
+          fade: 0.012 + Math.random() * 0.018,
+          r   : 1.2 + Math.random() * 2.2,
+          col : [r, g, b],
+        });
+      }
+    }
+
+    function tickBurst(dt) {
+      for (let i = burst.length - 1; i >= 0; i--) {
+        const p = burst[i];
+        p.x    += p.vx * dt * 60;
+        p.y    += p.vy * dt * 60;
+        p.vx   *= 0.96;
+        p.vy   *= 0.96;
+        p.life -= p.fade * dt * 60;
+        if (p.life <= 0) burst.splice(i, 1);
+      }
+    }
+
+    function drawBurst() {
+      for (const p of burst) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * p.life, 0, TAU);
+        ctx.fillStyle = `rgba(${p.col[0]},${p.col[1]},${p.col[2]},${p.life * 0.85})`;
+        ctx.fill();
+      }
+    }
+
+    // 4. Expanding ripples — state transitions
+    const ripples = [];
+
+    function spawnRipple(hexColor) {
+      const r = parseInt(hexColor.slice(1,3),16);
+      const g = parseInt(hexColor.slice(3,5),16);
+      const b = parseInt(hexColor.slice(5,7),16);
+      ripples.push({ rad: 30, life: 1.0, col: [r,g,b] });
+    }
+
+    function tickRipples(dt) {
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const r = ripples[i];
+        r.rad  += 3.2 * dt * 60;
+        r.life -= 0.018 * dt * 60;
+        if (r.life <= 0) ripples.splice(i, 1);
+      }
+    }
+
+    function drawRipples() {
+      for (const r of ripples) {
+        ctx.beginPath();
+        ctx.arc(CX, CY, r.rad, 0, TAU);
+        ctx.strokeStyle = `rgba(${r.col[0]},${r.col[1]},${r.col[2]},${r.life * 0.55})`;
+        ctx.lineWidth   = 1.5 * r.life;
+        ctx.stroke();
+      }
+    }
+
+    // 5. Streak corona satellites — orbit when trusted
+    const satellites = [];
+    let satAngle = 0;
+
+    function ensureSatellites() {
+      const needed = streakCount >= STREAK_MIN ? Math.min(streakCount - STREAK_MIN + 3, 8) : 0;
+      while (satellites.length < needed) {
+        satellites.push({
+          offset: (satellites.length / 8) * TAU,
+          r     : 1.5 + Math.random() * 1.0,
+          layer : satellites.length % 2,
+        });
+      }
+      while (satellites.length > needed) satellites.pop();
+    }
+
+    function drawSatellites(sec, snap) {
+      if (satellites.length === 0) return;
+      const orbitR = Math.min(W,H) * (snap.live ? 0.19 : 0.17);
+      const speed  = snap.live ? 0.9 : 0.55;
+      satAngle = sec * speed;
+
+      ctx.globalCompositeOperation = 'screen';
+      for (let i = 0; i < satellites.length; i++) {
+        const s     = satellites[i];
+        const a     = satAngle + s.offset + (s.layer ? Math.PI / satellites.length : 0);
+        const r2    = orbitR * (s.layer ? 1.35 : 1.0);
+        const sx    = CX + Math.cos(a) * r2;
+        const sy    = CY + Math.sin(a) * r2;
+        const pulse = 0.6 + 0.4 * Math.sin(sec * 3.1 + s.offset);
+
+        const grd = ctx.createRadialGradient(sx,sy,0,sx,sy,s.r*4);
+        grd.addColorStop(0, `rgba(255,230,100,${pulse * 0.9})`);
+        grd.addColorStop(1, `rgba(255,180,40,0)`);
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.r * 4, 0, TAU);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.r, 0, TAU);
+        ctx.fillStyle = `rgba(255,240,160,${pulse})`;
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Event log
+    // ──────────────────────────────────────────────────────
+    const logEl = document.getElementById('log');
+    function logEvent(type, color, detail) {
+      const now  = new Date();
+      const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+      const el   = document.createElement('div');
+      el.className   = 'log-entry';
+      el.style.color = color;
+      el.textContent = `${time}  ${type}  ${detail}`;
+      logEl.prepend(el);
+      while (logEl.children.length > 10) logEl.lastChild.remove();
+    }
+
+    // ── Hard reset
+    function hardReset() {
+      gate.reset(true);
+      flashAlpha = 0; lockPulse = 0;
+      isHolding  = false;
+      vortex.length = 0;
+      burst.length  = 0;
+      ripples.length = 0;
+      streakCount = 0;
+      satellites.length = 0;
+      updateStreakBadge();
+    }
+
+    // ── Pointer events
+    canvas.addEventListener('pointerdown', e => {
+      canvas.setPointerCapture(e.pointerId);
+      const d = gate.hold(e.clientX, e.clientY);
+      if (d?.state !== State.LOCKED) {
+        isHolding   = true;
+        holdStartMs = performance.now();
+      }
+    });
+    canvas.addEventListener('pointermove', e => gate.move(e.clientX, e.clientY));
+    canvas.addEventListener('pointerup',   () => { gate.release(); isHolding = false; });
+    canvas.addEventListener('pointercancel',()=> { gate.release(); isHolding = false; });
+
+    // ── Keyboard
+    addEventListener('keydown', e => {
+      if (e.key === 'r' || e.key === 'R') { hardReset(); logEvent('reset','#8090B0','hard reset'); }
+      if ((e.key === ' ' || e.key === 'Enter') && !isHolding) {
+        const d = gate.hold(CX, CY);
+        if (d?.state !== State.LOCKED) {
+          isHolding   = true;
+          holdStartMs = performance.now();
+        }
+        e.preventDefault();
+      }
+    });
+    addEventListener('keyup', e => {
+      if (e.key === ' ' || e.key === 'Enter') { gate.release(); isHolding = false; }
+    });
+
+    // ── Phase colours
+    const C = {
+      sync  : [60,  165, 255],
+      commit: [255, 202,  58],
+      live  : [255, 220, 100],
+      locked: [240, 110,  35],
+      idle  : [80,  120, 175],
+    };
+
+    function phaseColor(snap, chargeP) {
+      if (snap.state === State.LIVE)   return C.live;
+      if (snap.state === State.LOCKED) return C.locked;
+      if (snap.synced && chargeP > 0)  return C.commit;
+      if (!snap.synced && chargeP > 0) return C.sync;
+      if (snap.synced)                 return C.commit;
+      return C.idle;
+    }
+
+    // ── HUD
+    const stateEl  = document.getElementById('state');
+    const hintEl   = document.getElementById('hint');
+    const mCommit  = document.getElementById('m-commit');
+    const mSync    = document.getElementById('m-sync');
+    const mTension = document.getElementById('m-tension');
+    const mEscal   = document.getElementById('m-escal');
+    const mWindow  = document.getElementById('m-window');
+
+    const STATE_COLOR = {
+      [State.IDLE]  : 'rgba(100,140,200,.60)',
+      [State.PRIMED]: 'rgba(60,165,255,.90)',
+      [State.LIVE]  : 'rgba(255,202,58,.95)',
+      [State.LOCKED]: 'rgba(240,110,35,.90)',
+    };
+    const HINTS = {
+      [State.IDLE]  : 'hold steady to sync',
+      [State.PRIMED]: 'synced — hold to commit',
+      [State.LIVE]  : 'live — action authorised',
+      [State.LOCKED]: 'locked — wait it out',
+    };
+
+    function updateHUD(snap, chargeP) {
+      stateEl.textContent       = snap.state;
+      stateEl.style.color       = STATE_COLOR[snap.state] ?? 'white';
+      stateEl.style.borderColor = STATE_COLOR[snap.state] ?? 'white';
+      stateEl.style.background  = 'rgba(5,7,12,0.75)';
+
+      const hint = isHolding
+        ? (snap.state === State.IDLE   ? `syncing… ${Math.round(chargeP*100)}%`   :
+           snap.state === State.PRIMED ? `committing… ${Math.round(chargeP*100)}%` :
+           HINTS[snap.state])
+        : HINTS[snap.state];
+      hintEl.textContent = hint;
+
+      mCommit.textContent  = snap.commitMs + 'ms';
+      mSync.textContent    = snap.syncMs   + 'ms';
+      mTension.textContent = snap.tension.toFixed(2);
+      mEscal.textContent   = snap.escalation;
+      mWindow.textContent  = snap.live
+        ? (Math.ceil(snap.windowRemaining / 100) / 10).toFixed(1) + 's'
+        : snap.state === State.LOCKED
+          ? '−' + (Math.ceil(snap.lockRemaining / 100) / 10).toFixed(1) + 's'
+          : '—';
+    }
+
+    // ── Helpers
+    function lerp(a,b,t){ return a+(b-a)*(t<0?0:t>1?1:t); }
+    function ease(t){ return t<.5?2*t*t:-1+(4-2*t)*t; }
+
+    // ──────────────────────────────────────────────────────
+    // Render loop
+    // ──────────────────────────────────────────────────────
+    let prevLive    = false;
+    let windowTotal = 0;        // captured at LIVE entry for countdown fraction
+    let lastFrameT  = performance.now();
+
+    function tick() {
+      const now  = performance.now();
+      const dt   = Math.min((now - lastFrameT) / 1000, 0.05);
+      lastFrameT = now;
+      const sec  = now / 1000;
+
+      const ev   = gate.tick();
+      const snap = gate.snapshot();
+
+      // Charge progress
+      const charging = isHolding && snap.state !== State.LOCKED && !snap.live;
+      const holdMs   = isHolding ? now - holdStartMs : 0;
+      const reqMs    = snap.synced ? snap.commitMs : snap.syncMs;
+      const chargeP  = charging ? Math.min(1, holdMs / reqMs) : 0;
+
+      // Flash on LIVE entry — capture window total for countdown
+      if (snap.live && !prevLive) {
+        flashAlpha  = 1.0;
+        windowTotal = PRESETS[severity].windowMs;
+      }
+      prevLive = snap.live;
+      flashAlpha *= Math.pow(0.88, dt * 60);
+
+      // Lock pulse
+      if (snap.state === State.LOCKED) lockPulse = Math.min(1, lockPulse + 0.06 * dt * 60);
+      else lockPulse *= Math.pow(0.88, dt * 60);
+
+      // Spawn vortex particles while holding
+      if (isHolding && !snap.live && snap.state !== State.LOCKED) {
+        const rate = 1 + Math.floor(chargeP * 3);
+        for (let i = 0; i < rate; i++) {
+          if (Math.random() < 0.35 + chargeP * 0.50) spawnVortexParticle(chargeP);
+        }
+      }
+
+      // Update satellites
+      ensureSatellites();
+
+      // Tick particles
+      tickFloaters(dt);
+      tickVortex(dt);
+      tickBurst(dt);
+      tickRipples(dt);
+
+      const [cR, cG, cB] = phaseColor(snap, chargeP);
+      const trusted = streakCount >= STREAK_MIN;
+
+      // ────────────────────────────────────────
+      // DRAW
+      // ────────────────────────────────────────
+
+      // 1. Background — reactive gradient
+      {
+        const bgPulse = 0.5 + 0.5 * Math.sin(sec * 0.4);
+        const warmR = trusted && snap.live ? Math.floor(cR * 0.055) : Math.floor(cR * 0.028);
+        const warmG = trusted && snap.live ? Math.floor(cG * 0.028) : Math.floor(cG * 0.018);
+        const warmB = Math.floor(cB * 0.045);
+        const bg = ctx.createRadialGradient(CX, CY, 0, CX, CY, Math.max(W,H) * 0.9);
+        bg.addColorStop(0,   `rgb(${warmR + 4},${warmG + 4},${warmB + 8})`);
+        bg.addColorStop(0.45,`rgb(3,4,8)`);
+        bg.addColorStop(1,   `rgb(1,2,4)`);
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // Screen-blend layer for all additive elements
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+
+      // 2. Ambient floaters
+      drawFloaters(sec, snap);
+
+      // 3. Wide ambient field glow
+      {
+        const ambR = Math.min(W,H) * (0.32 + chargeP * 0.08);
+        const ambA = 0.038 + (snap.live ? 0.055 : 0) + chargeP * 0.045 + (trusted ? 0.022 : 0);
+        const amb  = ctx.createRadialGradient(CX,CY,0,CX,CY,ambR);
+        amb.addColorStop(0, `rgba(${cR},${cG},${cB},${ambA})`);
+        amb.addColorStop(1, `rgba(${cR},${cG},${cB},0)`);
+        ctx.fillStyle = amb;
+        ctx.beginPath();
+        ctx.arc(CX, CY, ambR, 0, TAU);
+        ctx.fill();
+      }
+
+      // 4. GRANT flash
+      if (flashAlpha > 0.01) {
+        const fl = ctx.createRadialGradient(CX,CY,0,CX,CY,Math.max(W,H)*0.80);
+        fl.addColorStop(0,    `rgba(255,245,200,${flashAlpha * 0.75})`);
+        fl.addColorStop(0.30, `rgba(${cR},${cG},${cB},${flashAlpha * 0.35})`);
+        fl.addColorStop(1,    `rgba(0,0,0,0)`);
+        ctx.fillStyle = fl;
+        ctx.fillRect(0, 0, W, H);
+        // trusted: second gold wave
+        if (trusted) {
+          const fl2 = ctx.createRadialGradient(CX,CY,0,CX,CY,Math.max(W,H)*0.55);
+          fl2.addColorStop(0,   `rgba(255,210,60,${flashAlpha * 0.45})`);
+          fl2.addColorStop(1,   `rgba(255,160,0,0)`);
+          ctx.fillStyle = fl2;
+          ctx.fillRect(0, 0, W, H);
+        }
+      }
+
+      // 5. Contracting hold ring
+      if (chargeP > 0.02) {
+        const ringR = lerp(Math.min(W,H) * 0.40, Math.min(W,H) * 0.055, ease(chargeP));
+        // Glow halo
+        ctx.beginPath();
+        ctx.arc(CX, CY, ringR, 0, TAU);
+        ctx.strokeStyle = `rgba(${cR},${cG},${cB},${chargeP * 0.24})`;
+        ctx.lineWidth   = 8 + chargeP * 6;
+        ctx.stroke();
+        // Crisp ring
+        ctx.beginPath();
+        ctx.arc(CX, CY, ringR, 0, TAU);
+        ctx.strokeStyle = `rgba(${cR},${cG},${cB},${chargeP * 0.70})`;
+        ctx.lineWidth   = 1.5;
+        ctx.stroke();
+      }
+
+      // 6. Vortex particles
+      drawVortex(snap);
+
+      // 7. Burst particles
+      drawBurst();
+
+      // 8. Expanding ripples
+      drawRipples();
+
+      // 9. LOCKED warning ring
+      if (lockPulse > 0.01) {
+        const lp    = 0.5 + 0.5 * Math.sin(sec * 4.8);
+        const lockR = Math.min(W,H) * 0.22;
+        ctx.beginPath();
+        ctx.arc(CX, CY, lockR, 0, TAU);
+        ctx.strokeStyle = `rgba(240,110,35,${lockPulse * lp * 0.60})`;
+        ctx.lineWidth   = 3 + lp * 5;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(CX, CY, lockR, 0, TAU);
+        ctx.strokeStyle = `rgba(240,110,35,${lockPulse * 0.32})`;
+        ctx.lineWidth   = 1.0;
+        ctx.stroke();
+      }
+
+      // 10. Progress arc track + sweep
+      {
+        const arcR = Math.min(W,H) * 0.16;
+        // Track
+        ctx.beginPath();
+        ctx.arc(CX, CY, arcR, 0, TAU);
+        ctx.strokeStyle = `rgba(${cR},${cG},${cB},${snap.live ? 0.25 : 0.08})`;
+        ctx.lineWidth   = 1.2;
+        ctx.stroke();
+
+        // Sweep
+        if (chargeP > 0.005 || snap.live) {
+          const windowFrac = (snap.live && windowTotal > 0)
+            ? Math.max(0, snap.windowRemaining / windowTotal)
+            : 1;
+          const sweep = snap.live ? windowFrac * TAU : chargeP * TAU;
+          const start = -Math.PI / 2;
+          const end   = start + sweep;
+
+          // Urgency: arc turns amber→red when window < 30%
+          let arcR2 = cR, arcG2 = cG, arcB2 = cB;
+          if (snap.live && windowFrac < 0.30) {
+            const t = 1 - windowFrac / 0.30;
+            arcR2 = Math.round(cR + (255 - cR) * t * 0.7);
+            arcG2 = Math.round(cG * (1 - t * 0.55));
+            arcB2 = Math.round(cB * (1 - t * 0.70));
+          }
+
+          ctx.lineCap = 'round';
+          // Glow
+          ctx.beginPath();
+          ctx.arc(CX, CY, arcR, start, end);
+          ctx.strokeStyle = `rgba(${arcR2},${arcG2},${arcB2},${snap.live ? 0.38 : chargeP * 0.22})`;
+          ctx.lineWidth   = 14;
+          ctx.stroke();
+          // Crisp
+          ctx.beginPath();
+          ctx.arc(CX, CY, arcR, start, end);
+          ctx.strokeStyle = `rgba(${arcR2},${arcG2},${arcB2},${snap.live ? 0.90 : 0.55 + chargeP * 0.42})`;
+          ctx.lineWidth   = 2.2;
+          ctx.stroke();
+
+          // Tip dot
+          if (!snap.live) {
+            const tx = CX + Math.cos(end) * arcR;
+            const ty = CY + Math.sin(end) * arcR;
+            const tg = ctx.createRadialGradient(tx,ty,0,tx,ty,10+chargeP*8);
+            tg.addColorStop(0, `rgba(${cR},${cG},${cB},${0.65+chargeP*0.35})`);
+            tg.addColorStop(1, `rgba(${cR},${cG},${cB},0)`);
+            ctx.fillStyle = tg;
+            ctx.beginPath();
+            ctx.arc(tx, ty, 10+chargeP*8, 0, TAU);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(tx, ty, 3.5+chargeP*2, 0, TAU);
+            ctx.fillStyle = `rgba(${cR},${cG},${cB},${0.75+chargeP*0.25})`;
+            ctx.fill();
+          }
+
+          // Quarter-marks
+          for (const f of [0.25, 0.5, 0.75]) {
+            if (chargeP < f && !snap.live) break;
+            const ma = start + f * TAU;
+            ctx.beginPath();
+            ctx.arc(CX+Math.cos(ma)*arcR, CY+Math.sin(ma)*arcR, 2.5, 0, TAU);
+            ctx.fillStyle = `rgba(${cR},${cG},${cB},0.90)`;
+            ctx.fill();
+          }
+        }
+      }
+
+      // 11. Trusted corona (streak ring)
+      if (trusted) {
+        const corona = 0.5 + 0.5 * Math.sin(sec * 2.2);
+        const cRad   = Math.min(W,H) * (0.13 + corona * 0.006);
+        // Inner corona
+        ctx.beginPath();
+        ctx.arc(CX, CY, cRad, 0, TAU);
+        ctx.strokeStyle = `rgba(255,202,58,${0.18 + corona * 0.10})`;
+        ctx.lineWidth   = 2 + corona * 2;
+        ctx.stroke();
+        // Dashed outer
+        ctx.setLineDash([4, 8]);
+        ctx.beginPath();
+        ctx.arc(CX, CY, cRad * 1.18, 0, TAU);
+        ctx.strokeStyle = `rgba(255,202,58,${0.12 + corona * 0.06})`;
+        ctx.lineWidth   = 1.0;
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 12. Satellite crown (streak reward)
+      drawSatellites(sec, snap);
+
+      // 13. Central glow + core dot
+      {
+        const pulse  = 0.76 + 0.24 * Math.sin(sec * (snap.live ? 2.4 : 0.9));
+        const cGlowA = snap.live
+          ? (0.52 + flashAlpha * 0.32) * pulse
+          : (chargeP * 0.48 + flashAlpha * 0.28) * pulse;
+        const cGlowR = Math.min(W,H) * (snap.live ? 0.11 : 0.06 + chargeP * 0.05) * pulse;
+
+        if (cGlowA > 0.015) {
+          const cg = ctx.createRadialGradient(CX,CY,0,CX,CY,cGlowR);
+          cg.addColorStop(0, `rgba(${cR},${cG},${cB},${cGlowA})`);
+          cg.addColorStop(1, `rgba(${cR},${cG},${cB},0)`);
+          ctx.fillStyle = cg;
+          ctx.beginPath();
+          ctx.arc(CX, CY, cGlowR, 0, TAU);
+          ctx.fill();
+        }
+        // Core dot
+        ctx.beginPath();
+        ctx.arc(CX, CY, snap.live ? 5.5 : 2.2 + chargeP * 3.2, 0, TAU);
+        ctx.fillStyle = `rgba(${cR},${cG},${cB},${snap.live ? 0.98 : 0.42 + chargeP * 0.56})`;
+        ctx.fill();
+      }
+
+      // 14. LIVE: breathing outer ring (+ extra trusted ring)
+      if (snap.live) {
+        const breath = 0.96 + 0.04 * Math.sin(sec * 1.8);
+        const bR     = Math.min(W,H) * 0.27 * breath;
+        ctx.beginPath();
+        ctx.arc(CX, CY, bR, 0, TAU);
+        ctx.strokeStyle = `rgba(${cR},${cG},${cB},${0.13 + 0.06 * Math.sin(sec * 1.8)})`;
+        ctx.lineWidth   = 1.2;
+        ctx.stroke();
+
+        if (trusted) {
+          const bR2 = Math.min(W,H) * 0.32 * (0.97 + 0.03 * Math.sin(sec * 1.1));
+          ctx.beginPath();
+          ctx.arc(CX, CY, bR2, 0, TAU);
+          ctx.strokeStyle = `rgba(255,202,58,${0.09 + 0.04 * Math.sin(sec * 1.1)})`;
+          ctx.lineWidth   = 1.0;
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+
+      // 15. Vignette (source-over)
+      {
+        const vig = ctx.createRadialGradient(CX,CY,Math.min(W,H)*0.20,CX,CY,Math.max(W,H)*0.80);
+        vig.addColorStop(0, 'rgba(0,0,0,0)');
+        vig.addColorStop(1, 'rgba(0,0,3,0.75)');
+        ctx.fillStyle = vig;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      // ── HUD
+      updateHUD(snap, chargeP);
+
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
