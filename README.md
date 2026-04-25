@@ -82,9 +82,9 @@ A breach is an impulsive release during the commit phase. The action is not bloc
 
 | Package | Description |
 |---|---|
-| [`@holdfast/core`](packages/core) | Pure JS engine. Zero dependencies. Works anywhere. |
-| [`@holdfast/react`](packages/react) | React component + hook. Drop-in overlay. |
-| [`@holdfast/element`](packages/element) | Web Component. Framework-agnostic. |
+| [`@holdfastjs/core`](packages/core) | Pure JS engine. Zero dependencies. Works anywhere. |
+| [`@holdfastjs/react`](packages/react) | React component + hook. Drop-in overlay. |
+| [`@holdfastjs/element`](packages/element) | Web Component. Framework-agnostic. |
 
 ---
 
@@ -93,9 +93,9 @@ A breach is an impulsive release during the commit phase. The action is not bloc
 ### Core (framework-agnostic)
 
 ```bash
-npm install @holdfast/core
+npm install @holdfastjs/core
 js
-import { HoldfastGate } from '@holdfast/core';
+import { HoldfastGate } from '@holdfastjs/core';
 
 const gate = new HoldfastGate({ storageKey: 'delete_db' });
 
@@ -112,9 +112,9 @@ element.addEventListener('pointerup',   () => gate.release());
 function loop() { gate.tick(); requestAnimationFrame(loop); }
 React
 bash
-npm install @holdfast/core @holdfast/react
+npm install @holdfastjs/core @holdfastjs/react
 jsx
-import { HoldfastGuard } from '@holdfast/react';
+import { HoldfastGuard } from '@holdfastjs/react';
 
 function DeleteButton() {
   return (
@@ -131,10 +131,10 @@ That's it. The guard handles the overlay, canvas animation, pointer capture, key
 
 Web Component
 bash
-npm install @holdfast/core @holdfast/element
+npm install @holdfastjs/core @holdfastjs/element
 html
 <script type="module">
-  import '@holdfast/element';
+  import '@holdfastjs/element';
 </script>
 
 <holdfast-gate label="Delete account" severity="danger">
@@ -198,7 +198,7 @@ ts
   commitMs       : number   // current adaptive commit duration
   syncMs         : number   // sync hold duration
 }
-@holdfast/react — HoldfastGuard props
+@holdfastjs/react — HoldfastGuard props
 tsx
 <HoldfastGuard
   label="Action description"    // required — shown in overlay
@@ -232,7 +232,7 @@ const { snapshot, handlers, gate } = useHoldfast({
 gate.on('grant', () => executeAction());
 
 return <div {...handlers}>...</div>;
-@holdfast/element — Web Component events
+@holdfastjs/element — Web Component events
 Event	Detail	When
 hf:grant	GateSnapshot	Permission earned
 hf:breach	GateSnapshot	Breach penalty applied

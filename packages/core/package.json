@@ -1,5 +1,5 @@
 {
-  "name": "@holdfast/core",
+  "name": "@holdfastjs/core",
   "version": "0.1.0",
   "description": "Behavioural confirmation engine. Gates privileged actions behind sustained, steady intent.",
   "keywords": [
@@ -13,7 +13,7 @@
     "accessibility",
     "composure"
   ],
-  "author": "",
+  "author": "Kade Cowper",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

@@ -1,5 +1,5 @@
 {
-  "name": "@holdfast/react",
+  "name": "@holdfastjs/react",
   "version": "0.1.0",
   "description": "React bindings for HoldfastGate — HoldfastGuard component and useHoldfast hook.",
   "keywords": ["holdfast", "confirmation", "react", "hook", "gate", "ux", "deliberate"],
@@ -23,11 +23,13 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@holdfast/core": "workspace:*"
+    "@holdfastjs/core": "^0.1.0"
   },
   "devDependencies": {
     "rollup": "^4.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
+    "rollup-plugin-esbuild": "^5.0.0",
+    "esbuild": "^0.25.0",
     "react": "^18.0.0"
   },
   "sideEffects": false

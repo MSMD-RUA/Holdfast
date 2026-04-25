@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { State } from '@holdfast/core';
+import { State } from '@holdfastjs/core';
 
 const TAU = Math.PI * 2;
 
@@ -37,7 +37,7 @@ function ease(t) { return t < 0.5 ? 2*t*t : -1 + (4 - 2*t) * t; }
 
 /**
  * @param {{
- *   snapshot: import('@holdfast/core').GateSnapshot,
+ *   snapshot: import('@holdfastjs/core').GateSnapshot,
  *   isHolding: boolean,
  *   holdStartMs: number,
  *   size?: number,

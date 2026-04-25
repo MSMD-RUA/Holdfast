@@ -43,7 +43,7 @@
  *   hf:cancel   — user cancelled    — detail: null
  */
 
-import { HoldfastGate, State, DEFAULTS } from '@holdfast/core';
+import { HoldfastGate, State, DEFAULTS } from '@holdfastjs/core';
 
 const SEVERITY_PRESETS = {
   caution : { syncMs: 600,  commitMs: 1200, lockMs:  4000, hardLockMs: 12000, windowMs: 12000 },

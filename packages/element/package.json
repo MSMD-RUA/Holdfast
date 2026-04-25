@@ -1,5 +1,5 @@
 {
-  "name": "@holdfast/element",
+  "name": "@holdfastjs/element",
   "version": "0.1.0",
   "description": "Web Component for HoldfastGate — framework-agnostic <holdfast-gate> custom element.",
   "keywords": ["holdfast", "web-component", "custom-element", "confirmation", "gate"],
@@ -19,7 +19,7 @@
     "dev":   "rollup -c --watch"
   },
   "dependencies": {
-    "@holdfast/core": "workspace:*"
+    "@holdfastjs/core": "^0.1.0"
   },
   "devDependencies": {
     "rollup": "^4.0.0",
