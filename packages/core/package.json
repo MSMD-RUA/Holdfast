@@ -1,5 +1,5 @@
 {
-  "name": "@holdfastjs/core",
+  "name": "@holdgate/core",
   "version": "0.1.0",
   "description": "Behavioural confirmation engine. Gates privileged actions behind sustained, steady intent.",
   "keywords": [

@@ -82,9 +82,9 @@ A breach is an impulsive release during the commit phase. The action is not bloc
 
 | Package | Description |
 |---|---|
-| [`@holdfastjs/core`](packages/core) | Pure JS engine. Zero dependencies. Works anywhere. |
-| [`@holdfastjs/react`](packages/react) | React component + hook. Drop-in overlay. |
-| [`@holdfastjs/element`](packages/element) | Web Component. Framework-agnostic. |
+| [`@holdgate/core`](packages/core) | Pure JS engine. Zero dependencies. Works anywhere. |
+| [`@holdgate/react`](packages/react) | React component + hook. Drop-in overlay. |
+| [`@holdgate/element`](packages/element) | Web Component. Framework-agnostic. |
 
 ---
 
@@ -93,9 +93,9 @@ A breach is an impulsive release during the commit phase. The action is not bloc
 ### Core (framework-agnostic)
 
 ```bash
-npm install @holdfastjs/core
+npm install @holdgate/core
 js
-import { HoldfastGate } from '@holdfastjs/core';
+import { HoldfastGate } from '@holdgate/core';
 
 const gate = new HoldfastGate({ storageKey: 'delete_db' });
 
@@ -112,9 +112,9 @@ element.addEventListener('pointerup',   () => gate.release());
 function loop() { gate.tick(); requestAnimationFrame(loop); }
 React
 bash
-npm install @holdfastjs/core @holdfastjs/react
+npm install @holdgate/core @holdgate/react
 jsx
-import { HoldfastGuard } from '@holdfastjs/react';
+import { HoldfastGuard } from '@holdgate/react';
 
 function DeleteButton() {
   return (
@@ -131,10 +131,10 @@ That's it. The guard handles the overlay, canvas animation, pointer capture, key
 
 Web Component
 bash
-npm install @holdfastjs/core @holdfastjs/element
+npm install @holdgate/core @holdgate/element
 html
 <script type="module">
-  import '@holdfastjs/element';
+  import '@holdgate/element';
 </script>
 
 <holdfast-gate label="Delete account" severity="danger">
@@ -198,7 +198,7 @@ ts
   commitMs       : number   // current adaptive commit duration
   syncMs         : number   // sync hold duration
 }
-@holdfastjs/react — HoldfastGuard props
+@holdgate/react — HoldfastGuard props
 tsx
 <HoldfastGuard
   label="Action description"    // required — shown in overlay
@@ -232,7 +232,7 @@ const { snapshot, handlers, gate } = useHoldfast({
 gate.on('grant', () => executeAction());
 
 return <div {...handlers}>...</div>;
-@holdfastjs/element — Web Component events
+@holdgate/element — Web Component events
 Event	Detail	When
 hf:grant	GateSnapshot	Permission earned
 hf:breach	GateSnapshot	Breach penalty applied
@@ -241,15 +241,21 @@ hf:locked	GateSnapshot	Cooldown started
 hf:expired	GateSnapshot	LIVE window ended
 hf:cancel	null	User cancelled overlay
 Use cases
-Developer tooling — Destructive database operations, force-push, infrastructure teardown.
 
-Financial — Large transfers, account closure, subscription cancellation.
+**Best fit — developer and operator tooling:**
+- Database operations (drop table, truncate, wipe)
+- Infrastructure (force-push, teardown, redeploy)
+- Admin panels with irreversible actions
+- Internal tools where the user is the same person who bears the consequence
 
-Impulsive behaviour friction — Social media post confirmation, spend controls.
+**Also fits:**
+- Financial flows — large transfers, account closure, subscription cancellation
+- Spend controls — impulsive-purchase friction in consumer fintech
+- Access lifecycle — short-lived privilege windows that must be re-earned, not held permanently
 
-Medical / industrial — Any interface where physiological state at time of action matters.
+**Accessibility trade-off**
 
-Access lifecycle — Short-lived privilege windows (windowMs) that require re-earning instead of staying permanently elevated.
+Holdfast requires sustained pointer steadiness. Users with motor impairments, tremors, or conditions affecting fine motor control may be unable to complete the hold. This is a deliberate design constraint appropriate for developer-facing tooling with a known user pool — it is **not** appropriate as the sole confirmation mechanism in a public-facing consumer UI without an alternative confirmation path.
 
 Development
 bash

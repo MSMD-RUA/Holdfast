@@ -1,9 +1,9 @@
-# @holdfastjs/react
+# @holdgate/react
 
 **React component + hook for HoldfastGate.**
 
 ```bash
-npm install @holdfastjs/core @holdfastjs/react
+npm install @holdgate/core @holdgate/react
 ```
 
 ## `<HoldfastGuard>` — drop-in overlay
@@ -13,7 +13,7 @@ overlay with Canvas2D hold feedback. Handles pointer capture, keyboard
 (Enter/Space to hold, Escape to cancel), and accessibility.
 
 ```jsx
-import { HoldfastGuard } from '@holdfastjs/react';
+import { HoldfastGuard } from '@holdgate/react';
 
 <HoldfastGuard
   label="Drop table users_prod"
@@ -27,7 +27,7 @@ import { HoldfastGuard } from '@holdfastjs/react';
 ## `useHoldfast` — bring your own UI
 
 ```jsx
-import { useHoldfast } from '@holdfastjs/react';
+import { useHoldfast } from '@holdgate/react';
 
 function MyConfirmButton() {
   const { snapshot, handlers, gate } = useHoldfast({
@@ -57,7 +57,7 @@ Renders just the hold mechanic canvas. Use when you want the visual but
 manage gate state yourself.
 
 ```jsx
-import { HoldfastCanvas } from '@holdfastjs/react';
+import { HoldfastCanvas } from '@holdgate/react';
 
 <HoldfastCanvas
   snapshot={snapshot}

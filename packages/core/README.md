@@ -1,4 +1,4 @@
-# @holdfastjs/core
+# @holdgate/core
 
 **The HoldfastGate engine. Pure JS, zero dependencies, ~5KB.**
 
@@ -6,13 +6,13 @@ Gates privileged actions behind sustained, steady intent. Works in any
 JavaScript environment — browser, Node, React, Vue, Svelte, vanilla.
 
 ```bash
-npm install @holdfastjs/core
+npm install @holdgate/core
 ```
 
 ## Minimal usage
 
 ```js
-import { HoldfastGate } from '@holdfastjs/core';
+import { HoldfastGate } from '@holdgate/core';
 
 const gate = new HoldfastGate({ storageKey: 'confirm_delete' });
 
@@ -42,7 +42,7 @@ IDLE → sync hold → PRIMED → commit hold → LIVE → expiry → IDLE
 ## States and Events exports
 
 ```js
-import { HoldfastGate, State, Event, DEFAULTS } from '@holdfastjs/core';
+import { HoldfastGate, State, Event, DEFAULTS } from '@holdgate/core';
 
 // State constants
 State.IDLE    // 'IDLE'

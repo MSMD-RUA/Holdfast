@@ -1,16 +1,16 @@
-# @holdfastjs/element
+# @holdgate/element
 
 **Web Component for HoldfastGate. Framework-agnostic.**
 
 ```bash
-npm install @holdfastjs/core @holdfastjs/element
+npm install @holdgate/core @holdgate/element
 ```
 
 ## Usage
 
 ```html
 <script type="module">
-  import '@holdfastjs/element';
+  import '@holdgate/element';
 </script>
 
 <holdfast-gate label="Drop table users_prod" severity="critical">

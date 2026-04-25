@@ -17,11 +17,11 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { HoldfastGate } from '@holdfastjs/core';
+import { HoldfastGate } from '@holdgate/core';
 
 /**
- * @param {import('@holdfastjs/core').DEFAULTS} [opts]
- * @returns {{ snapshot: import('@holdfastjs/core').GateSnapshot, handlers: object, gate: HoldfastGate }}
+ * @param {import('@holdgate/core').DEFAULTS} [opts]
+ * @returns {{ snapshot: import('@holdgate/core').GateSnapshot, handlers: object, gate: HoldfastGate }}
  */
 export function useHoldfast(opts = {}) {
   const gateRef    = useRef(null);

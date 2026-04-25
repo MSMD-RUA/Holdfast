@@ -30,7 +30,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { HoldfastGate, State } from '@holdfastjs/core';
+import { HoldfastGate, State } from '@holdgate/core';
 import { HoldfastCanvas } from './HoldfastCanvas.jsx';
 
 // ── Severity presets
