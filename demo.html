@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <meta name="color-scheme" content="dark"/>
   <title>Holdfast — Engine Demo</title>
+  <meta name="description" content="Live engine demo for Holdfast, an open-source behavioural-confirmation widget: a commit-and-sync gate that requires a deliberate, sustained action before a control fires. Watch commit and sync timing, tension and escalation respond in real time.">
   <style>
+    /* Page heading. Added 2026-07-26: the page had no heading of any level,
+       flagged by Bing site scan, leaving no machine-readable topic statement. */
+    #page-title { font: 600 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.55;
+      margin: 0 0 10px; max-width: 42ch; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
@@ -58,7 +64,12 @@
       font-size: 12px;
       letter-spacing: .06em;
       opacity: .35;
+      color: inherit;
+      text-decoration: none;
+      pointer-events: auto;
+      transition: opacity .15s;
     }
+    #wordmark:hover { opacity: .70; }
     #wordmark span { opacity: .55; }
 
     /* ── Metrics — top right */
@@ -162,6 +173,35 @@
       letter-spacing: .04em;
     }
 
+    /* ── Install strip — bottom right */
+    #install {
+      position: absolute;
+      bottom: 16px;
+      right: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      pointer-events: auto;
+    }
+    #install code {
+      font: 10px/1 ui-monospace, monospace;
+      letter-spacing: .05em;
+      color: rgba(180,195,230,.28);
+    }
+    .install-links {
+      display: flex;
+      gap: 12px;
+    }
+    .install-links a {
+      font-size: 10px;
+      letter-spacing: .05em;
+      color: rgba(180,195,230,.28);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .install-links a:hover { color: rgba(180,195,230,.70); }
+
     /* ── Severity switcher — bottom left */
     #severity {
       position: absolute;
@@ -194,7 +234,8 @@
   <canvas id="c"></canvas>
 
   <div id="hud">
-    <div id="wordmark">@holdgate<span>/core</span></div>
+    <h1 id="page-title">Holdfast engine demo &mdash; behavioural confirmation before a control fires</h1>
+    <a id="wordmark" href="https://www.npmjs.com/org/holdgate" target="_blank" rel="noopener">@holdgate<span>/core</span></a>
 
     <div id="state">IDLE</div>
     <div id="streak"></div>
@@ -213,6 +254,14 @@
     <div id="keys">
       <span>SPACE — hold</span>
       <span>R — reset</span>
+    </div>
+
+    <div id="install">
+      <code>npm i @holdgate/core</code>
+      <div class="install-links">
+        <a href="https://www.npmjs.com/org/holdgate" target="_blank" rel="noopener">npm</a>
+        <a href="https://github.com/MSMD-RUA" target="_blank" rel="noopener">github</a>
+      </div>
     </div>
 
     <div id="severity">
